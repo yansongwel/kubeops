@@ -1,6 +1,7 @@
 # API 网关和服务网格安装指南
 
 本文档介绍如何在 Kubernetes 集群中安装和配置 APISIX/Higress 和 Istio。
+API 网关与 Istio 均为可选外部组件，默认不启用；仅在需要统一流量入口或服务治理时安装。
 
 ## 目录
 
@@ -16,6 +17,19 @@
 - Kubernetes 1.19+
 - kubectl 已配置
 - Helm 3.x
+
+## Helm 默认配置
+
+Helm 默认不启用外部网关与 Istio，可按需在 values 中开启：
+
+```yaml
+gateway:
+  enabled: false
+  type: apisix
+
+istio:
+  enabled: false
+```
 
 ## 安装 APISIX
 

@@ -17,52 +17,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Technology Stack
 
 ### Backend (Go)
-- **Language**: Go 1.21+
-- **API Framework**: Gin (REST) + gRPC (internal service communication)
-- **K8s Client**: controller-runtime + client-go
+- **Language**: Go 1.25
+- **API Framework**: Gin v1.11.0 (REST) + gRPC v1.70.0 (internal service communication)
+- **K8s Client**: controller-runtime v0.20.0 + client-go v0.35.0 (Kubernetes 1.33)
 - **Database**: PostgreSQL (primary) + Redis (cache)
 - **Message Queue**: NATS (optional, for async tasks)
+- **Repository**: https://github.com/yansongwel/kubeops.git
 
 ### Frontend (Vue)
-- **Framework**: Vue 3 with Composition API
-- **Language**: TypeScript
-- **Build Tool**: Vite
-- **UI Framework**: Element Plus or Ant Design Vue
-- **State Management**: Pinia
-- **Routing**: Vue Router
+- **Framework**: Vue 3.5 with Composition API
+- **Language**: TypeScript 5.7
+- **Build Tool**: Vite 6.0
+- **UI Framework**: Element Plus 2.9
+- **State Management**: Pinia 2.2
+- **Routing**: Vue Router 4.5
+- **Node Version**: 24.0+
 
 ### Infrastructure
 - **Container Runtime**: Docker / Containerd
-- **Orchestration**: Kubernetes 1.28+
+- **Orchestration**: Kubernetes 1.33
 - **Deployment**: Helm charts
 - **Service Mesh**: Istio (optional)
 - **Ingress**: Nginx / Traefik
 
 ## Architecture
 
-### Microservices Layout
+### Monolith Layout
 
 ```
 KubeOps/
 ├── backend/
-│   ├── api-gateway/          # API Gateway (auth, routing, rate limiting)
-│   ├── kube-manager/         # K8s resource management service
-│   ├── ai-inspector/         # AI inspection service
-│   ├── devops-service/       # CI/CD integration (Jenkins + ArgoCD)
-│   ├── logging-service/      # Logging platform integration
-│   └── monitoring-service/   # Monitoring platform integration
-│   ├── common/               # Shared libraries (go modules)
-│   └── proto/                # gRPC protocol definitions
+│   ├── cmd/
+│   │   └── server/           # Monolith entrypoint
+│   ├── internal/
+│   │   ├── gateway/          # API layer (auth, routing, rate limiting)
+│   │   ├── kube/             # K8s resource management module
+│   │   ├── ai/               # AI inspector module
+│   │   ├── devops/           # DevOps integrations (Jenkins, ArgoCD)
+│   │   ├── logging/          # Logging platform integrations
+│   │   ├── monitoring/       # Monitoring platform integrations
+│   │   ├── plugin/           # Pluggable providers (AI/Logging/Monitoring)
+│   │   ├── common/           # Shared libraries and utilities
+│   │   └── configs/          # Configuration and wiring
+│   ├── pkg/                  # Public packages (types, helpers)
+│   └── bin/                  # Built binaries (kubeops)
 ├── frontend/                 # Vue 3 Dashboard
 ├── deploy/                   # Kubernetes manifests & Helm charts
 │   ├── helm/
 │   │   ├── kubeops/
-│   │   ├── logging/
-│   │   │   ├── elk/         # ELK stack
-│   │   │   └── loki/        # Vector+Loki stack
-│   │   └── monitoring/
-│   │       ├── prometheus/  # Prometheus+Grafana
-│   │       └── victoriametrics/ # Prometheus+VictoriaMetrics
 │   ├── base/                # Base infrastructure (PostgreSQL, Redis, etc.)
 │   └── examples/            # Example configurations
 ├── docs/                    # Architecture docs, API docs, guides
@@ -70,20 +72,20 @@ KubeOps/
 └── tests/                   # E2E tests, integration tests
 ```
 
-### Core Services
+### Core Modules
 
-#### 1. API Gateway (`api-gateway/`)
-- **Purpose**: Single entry point, authentication, authorization, routing
+#### 1. Gateway (`internal/gateway`)
+- **Purpose**: HTTP entrypoint in monolith, authentication, authorization, routing
 - **Key Responsibilities**:
   - JWT/OAuth authentication
   - RBAC authorization
-  - Request routing to backend services
+  - Request routing to internal modules
   - Rate limiting and throttling
   - API versioning
-- **Port**: 8080 (HTTP), 9090 (gRPC)
+- **Port**: 8080 (HTTP)
 
-#### 2. Kube Manager (`kube-manager/`)
-- **Purpose**: Core Kubernetes resource management
+#### 2. Kube Manager (`internal/kube`)
+- **Purpose**: Kubernetes resource management
 - **Key Responsibilities**:
   - CRUD operations for all K8s resources (Deployments, Services, ConfigMaps, etc.)
   - CRD support and extensibility
@@ -92,7 +94,7 @@ KubeOps/
   - Multi-cluster support
 - **K8s Integration**: Uses controller-runtime for efficient resource operations
 
-#### 3. AI Inspector (`ai-inspector/`)
+#### 3. AI Inspector (`internal/ai`)
 - **Purpose**: AI-powered cluster health inspection and analysis
 - **Key Responsibilities**:
   - Anomaly detection in resource usage
@@ -106,7 +108,7 @@ KubeOps/
   - Prometheus metrics as input
   - Log data from logging service
 
-#### 4. DevOps Service (`devops-service/`)
+#### 4. DevOps (`internal/devops`)
 - **Purpose**: CI/CD pipeline integration
 - **Integrations**:
   - Jenkins (job creation, triggering, status monitoring)
@@ -117,7 +119,7 @@ KubeOps/
   - Deployment rollback and promotion
   - Environment management (dev, staging, prod)
 
-#### 5. Logging Service (`logging-service/`)
+#### 5. Logging (`internal/logging`)
 - **Purpose**: Unified logging platform integration
 - **Supported Stacks** (pluggable):
   - **Option 1**: Vector + Fluentd + Elasticsearch + Kibana (ELK)
@@ -129,7 +131,7 @@ KubeOps/
   - Log retention and archival policies
   - Integration with AI Inspector for analysis
 
-#### 6. Monitoring Service (`monitoring-service/`)
+#### 6. Monitoring (`internal/monitoring`)
 - **Purpose**: Monitoring and alerting integration
 - **Supported Stacks** (pluggable):
   - **Option 1**: Prometheus + Grafana
@@ -143,18 +145,18 @@ KubeOps/
 
 ### Service Communication
 
-- **External API**: RESTful (HTTP/JSON) via API Gateway
-- **Internal Services**: gRPC for high-performance inter-service communication
-- **Events**: NATS for async messaging (optional)
-- **Service Discovery**: Kubernetes native (DNS) or Consul
+- **External API**: RESTful (HTTP/JSON) served by monolith gateway
+- **Internal Modules**: In-process calls with clear boundaries; optional gRPC clients for external systems only
+- **Events**: Optional NATS for async tasks (e.g., long-running analysis)
+- **Plugins**: Providers loaded via `internal/plugin` with configuration-driven wiring
 
 ## Development Workflow
 
 ### Prerequisites
 ```bash
 # Install required tools
-- Go 1.21+
-- Node.js 18+
+- Go 1.25
+- Node.js 24
 - Docker/Podman
 - kubectl + helm
 - kind (local K8s) or access to a K8s cluster
@@ -212,10 +214,8 @@ make dev-deploy
 # Start databases (PostgreSQL, Redis)
 docker-compose -f deploy/docker-compose-dev.yaml up -d
 
-# Run backend services (each terminal)
-cd backend/api-gateway && go run cmd/server/main.go
-cd backend/kube-manager && go run cmd/server/main.go
-# ... other services
+# Run monolith backend
+cd backend && go run cmd/server/main.go
 
 # Run frontend
 cd frontend && npm run dev

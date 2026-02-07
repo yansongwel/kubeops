@@ -126,9 +126,8 @@
    # 启动依赖服务
    docker-compose -f deploy/docker-compose-dev.yaml up -d
 
-   # 运行后端服务（每个终端）
-   cd backend/api-gateway && go run cmd/server/main.go
-   cd backend/kube-manager && go run cmd/server/main.go
+# 运行单体后端
+cd backend && go run cmd/server/main.go
 
    # 运行前端
    cd frontend && npm run dev
@@ -176,14 +175,18 @@ npm run format
 ```
 KubeOps/
 ├── backend/
-│   ├── api-gateway/          # API 网关服务
-│   ├── kube-manager/         # K8s 资源管理器
-│   ├── ai-inspector/         # AI 巡检服务
-│   ├── devops-service/       # CI/CD 集成
-│   ├── logging-service/      # 日志平台集成
-│   ├── monitoring-service/   # 监控集成
-│   ├── common/               # 共享库
-│   └── proto/                # gRPC 定义
+│   ├── cmd/
+│   │   └── server/           # 单体入口
+│   ├── internal/
+│   │   ├── gateway/          # API 网关模块
+│   │   ├── kube/             # K8s 资源管理模块
+│   │   ├── ai/               # AI 巡检模块
+│   │   ├── devops/           # DevOps 集成模块
+│   │   ├── logging/          # 日志集成模块
+│   │   ├── monitoring/       # 监控集成模块
+│   │   ├── plugin/           # 插件适配层
+│   │   └── common/           # 共享库
+│   └── pkg/                  # 公共包
 ├── frontend/                 # Vue 3 仪表盘
 │   ├── src/
 │   │   ├── components/       # 可复用组件
@@ -247,18 +250,15 @@ onMounted(async () => {
 
 ## 添加新功能
 
-### 1. 后端服务
+### 1. 后端模块
 
 ```bash
-# 创建新服务目录
-mkdir backend/new-service
-cd backend/new-service
+# 创建新模块目录
+mkdir -p backend/internal/new-module
+mkdir -p backend/internal/new-module/{handler,service,repository}
 
-# 创建服务结构
-mkdir -p cmd/server pkg/api pkg/service
-
-# 实现服务
-# 添加到 docker-compose 和 helm charts
+# 实现模块
+# 更新路由注册与依赖注入
 ```
 
 ### 2. 前端页面

@@ -1,6 +1,7 @@
 # API 网关配置
 
 此目录包含 APISIX 和 Higress API 网关的配置。
+API 网关为可选外部组件，单体内置网关模块可直接对外提供服务，未启用外部网关时可忽略本目录配置。
 
 ## 支持的 API 网关
 
@@ -131,7 +132,7 @@ spec:
       paths:
       - /api/*
     backends:
-    - serviceName: api-gateway
+    - serviceName: kubeops
       servicePort: 8080
     plugins:
     - name: prometheus
@@ -158,7 +159,7 @@ spec:
       paths:
       - /api/v1/*
     backends:
-    - serviceName: api-gateway
+    - serviceName: kubeops
       servicePort: 8080
     plugins:
     - name: jwt-auth
@@ -211,7 +212,7 @@ metadata:
   namespace: kubeops
   annotations:
     # Higress 注解
-    higress.io/destination: api-gateway.kubeops.svc.cluster.local:8080
+    higress.io/destination: kubeops.kubeops.svc.cluster.local:8080
     # 限流
     higress.io/rate-limit: "100"
     # 超时
@@ -226,7 +227,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: api-gateway
+            name: kubeops
             port:
               number: 8080
 ```
@@ -260,15 +261,15 @@ spec:
           exact: "true"
     route:
     - destination:
-        host: api-gateway
+        host: kubeops
         subset: v2
   - route:
     - destination:
-        host: api-gateway
+        host: kubeops
         subset: v1
       weight: 90
     - destination:
-        host: api-gateway
+        host: kubeops
         subset: v2
       weight: 10
 ```

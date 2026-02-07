@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -13,9 +13,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the specific service
-ARG SERVICE=api-gateway
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/${SERVICE} ./${SERVICE}/cmd/server
+# Build the monolithic application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/kubeops ./cmd/server
 
 # Runtime stage
 FROM alpine:latest
@@ -25,11 +24,10 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Copy the binary from builder
-ARG SERVICE=api-gateway
-COPY --from=builder /app/bin/${SERVICE} .
+COPY --from=builder /app/bin/kubeops .
 
 # Expose port
 EXPOSE 8080
 
 # Run the binary
-CMD ["./api-gateway"]
+CMD ["./kubeops"]

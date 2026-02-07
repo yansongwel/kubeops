@@ -35,24 +35,14 @@ cd kubeops
 docker-compose -f deploy/docker-compose-dev.yaml up -d
 ```
 
-#### Step 3: Run Backend Services
-
-Open 3 terminal windows:
+#### Step 3: Run Monolith Backend and Frontend
 
 ```bash
-# Terminal 1 - API Gateway
-cd backend/api-gateway
+# Terminal 1 - Monolith Backend
+cd backend
 go run cmd/server/main.go
-```
 
-```bash
-# Terminal 2 - Kube Manager
-cd backend/kube-manager
-go run cmd/server/main.go
-```
-
-```bash
-# Terminal 3 - Frontend
+# Terminal 2 - Frontend
 cd frontend
 npm install
 npm run dev
@@ -120,7 +110,7 @@ Expected response:
 ```json
 {
   "status": "healthy",
-  "service": "api-gateway"
+  "service": "kubeops"
 }
 ```
 
@@ -128,7 +118,7 @@ Expected response:
 
 ```bash
 # List namespaces via API
-curl http://localhost:8081/api/v1/namespaces
+curl http://localhost:8080/api/v1/namespaces
 ```
 
 ### Check Frontend
@@ -224,12 +214,9 @@ npm run build
 ### Create Docker Images
 
 ```bash
-# Build all services
+# Build monolith backend image
 cd backend
 make docker-build
-
-# Build specific service
-make docker-build-api-gateway
 ```
 
 ## Troubleshooting

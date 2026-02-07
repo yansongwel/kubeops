@@ -18,16 +18,19 @@
 ## 技术栈
 
 ### 后端
-- **语言**：Go 1.21+
-- **框架**：Gin (HTTP), gRPC (内部通信)
-- **K8s 集成**：controller-runtime, client-go
+- **语言**：Go 1.25
+- **框架**：Gin v1.11.0 (HTTP), gRPC v1.70.0 (内部通信)
+- **K8s 集成**：controller-runtime v0.20.0, client-go v0.35.0 (Kubernetes 1.33)
 - **数据库**：PostgreSQL + Redis
+- **日志**：Zap v1.27.0
+- **仓库**：https://github.com/yansongwel/kubeops.git
 
 ### 前端
-- **框架**：Vue 3 + Composition API
-- **语言**：TypeScript
-- **UI 库**：Element Plus
-- **构建工具**：Vite
+- **框架**：Vue 3.5 + Composition API
+- **语言**：TypeScript 5.7
+- **UI 库**：Element Plus 2.9
+- **构建工具**：Vite 6.0
+- **Node 版本**：24.0+
 
 ### 基础设施
 - **容器**：Docker / Containerd

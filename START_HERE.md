@@ -5,13 +5,13 @@
 ### ✅ 已完成工作
 
 #### 1. 项目架构设计
-- ✅ 微服务架构设计
+- ✅ 模块化单体架构设计
 - ✅ 技术栈选型（Go + Vue 3）
-- ✅ API 网关层设计
+- ✅ API 网关模块设计
 - ✅ Istio 服务网格集成
 
 #### 2. 代码实现
-- ✅ 后端服务框架（API Gateway、Kube Manager）
+- ✅ 后端单体框架（模块化拆分）
 - ✅ 前端项目框架（Vue 3 + TypeScript）
 - ✅ Docker 多阶段构建
 - ✅ Helm Chart 部署配置
@@ -45,17 +45,21 @@
 
 ```
 KubeOps/
-├── backend/                  # Go 后端
-│   ├── api-gateway/         # API 网关 ✅
-│   ├── kube-manager/        # K8s 管理 ✅
-│   ├── ai-inspector/        # AI 巡检 📝
-│   ├── devops-service/      # DevOps 📝
-│   ├── logging-service/     # 日志服务 📝
-│   ├── monitoring-service/  # 监控服务 📝
-│   ├── common/              # 公共库 📝
-│   ├── proto/               # gRPC 📝
-│   ├── Dockerfile          # ✅
-│   └── Makefile            # ✅
+├── backend/                  # Go 单体后端
+│   ├── cmd/
+│   │   └── server/          # 入口 ✅
+│   ├── internal/
+│   │   ├── gateway/         # API 网关模块 ✅
+│   │   ├── kube/            # K8s 管理模块 ✅
+│   │   ├── ai/              # AI 巡检模块 📝
+│   │   ├── devops/          # DevOps 模块 📝
+│   │   ├── logging/         # 日志集成模块 📝
+│   │   ├── monitoring/      # 监控集成模块 📝
+│   │   ├── plugin/          # 插件适配层 📝
+│   │   └── common/          # 共享库 📝
+│   ├── pkg/                 # 公共包 📝
+│   ├── Dockerfile           # ✅
+│   └── Makefile             # ✅
 │
 ├── frontend/                 # Vue 3 前端
 │   ├── src/
@@ -161,8 +165,8 @@ Kubernetes      # 容器编排
 - `docs/frontend/code-templates.md` - 常用代码模板
 
 #### 后端开发
-- `backend/api-gateway/cmd/server/main.go` - API 网关示例
-- `backend/kube-manager/cmd/server/main.go` - Kube Manager 示例
+- `backend/cmd/server/main.go` - 单体入口
+- `backend/internal/kube/` - Kube 管理模块示例
 
 #### 部署运维
 - `docs/installation/gateway-istio.md` - APISIX/Higress/Istio 安装
@@ -194,12 +198,7 @@ open http://localhost:5173
 cd backend
 go mod download
 
-# 2. 运行 API 网关
-cd api-gateway
-go run cmd/server/main.go
-
-# 3. 运行 Kube Manager
-cd kube-manager
+# 2. 运行单体后端
 go run cmd/server/main.go
 ```
 
@@ -237,8 +236,8 @@ kubectl apply -f deploy/gateway/apisix/routes.yaml
 
 ### 第 3 个月：Go 后端
 - Week 1: Go 语言基础
-- Week 2: API 网关
-- Week 3: Kube Manager
+- Week 2: 网关模块
+- Week 3: Kube 管理模块
 - Week 4: 前后端联调
 
 ### 第 4 个月：高级特性
@@ -295,11 +294,11 @@ kubectl apply -f deploy/gateway/apisix/routes.yaml
 - [x] 文档体系建立
 
 #### 进行中 🚧
-- [ ] API 网关完整实现
-- [ ] Kube Manager 扩展
+- [ ] 网关模块完整实现
+- [ ] Kube 管理模块扩展
 - [ ] 前端页面完善
 - [ ] 实时日志功能
-- [ ] AI 巡检服务
+- [ ] AI 巡检模块
 - [ ] DevOps 集成
 
 #### 规划中 📝

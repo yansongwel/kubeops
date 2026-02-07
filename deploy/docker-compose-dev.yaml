@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -12,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/bitnami/postgresql
+      - ./data/postgres:/bitnami/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kubeops"]
       interval: 10s
@@ -24,13 +22,14 @@ services:
     image: bitnami/redis:7
     container_name: kubeops-redis
     environment:
-      ALLOW_EMPTY_PASSWORD: "yes"
+      ALLOW_EMPTY_PASSWORD: "no"
+      REDIS_PASSWORD: "kubeops"
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/bitnami/redis/data
+      - ./data/redis:/bitnami/redis/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,6 +43,3 @@ services:
       - "8222:8222"
     command: "-js"
 
-volumes:
-  postgres-data:
-  redis-data:
