@@ -1,8 +1,10 @@
 # KubeOps 项目初始化完成 🎉
 
-## 项目概览
+## 项目定位
 
-**KubeOps** 是一个企业级 Kubernetes 统一管理平台，集成 AI 智能巡检、DevOps/CI/CD、日志平台和监控平台。
+**KubeOps** 是一个**全栈学习项目**，面向希望提升前后端开发能力的高级运维工程师。
+
+**核心决策**：自己实现前端，最大化学习价值。
 
 ### 核心特性
 
@@ -306,6 +308,13 @@ kubectl apply -f deploy/istio/auth/
 - **贡献指南**：`CONTRIBUTING.md` - 贡献指南
 - **文档规范**：`docs/DOCUMENTATION.md` - 文档语言规范
 
+### 前端学习（⭐ 重点）
+- **学习指南**：`docs/frontend/learning-guide.md` - 前端技能学习路径
+- **学习计划**：`docs/frontend/learning-plan.md` - 6 个月详细计划
+- **前端架构**：`docs/frontend/architecture.md` - 前端项目架构
+- **代码模板**：`docs/frontend/code-templates.md` - 常用代码模板
+- **自己实现**：`docs/frontend/self-implementation.md` - 自研前端说明
+
 ### 安装配置
 - **API 网关和服务网格**：`docs/installation/gateway-istio.md` - APISIX/Higress/Istio 安装指南
 - **APISIX 配置**：`deploy/gateway/apisix/` - APISIX 路由配置
@@ -345,7 +354,7 @@ Apache License 2.0 - 详见 `LICENSE` 文件
 
 ## 联系方式
 
-- GitHub：https://github.com/your-org/kubeops
+- GitHub：https://github.com/yansongwel/kubeops.git
 - 邮箱：hello@kubeops.io
 
 ---
