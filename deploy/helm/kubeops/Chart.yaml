@@ -1,0 +1,17 @@
+apiVersion: v2
+name: kubeops
+description: A Helm chart for KubeOps - Kubernetes Management Platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kubernetes
+  - management
+  - dashboard
+  - devops
+  - monitoring
+home: https://github.com/your-org/kubeops
+icon: https://kubeops.io/logo.png
+maintainers:
+  - name: KubeOps Team
+    email: hello@kubeops.io

@@ -1,0 +1,83 @@
+# Istio 认证策略
+
+# 对等认证 - 启用 mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: kubeops
+spec:
+  mtls:
+    mode: STRICT
+---
+# JWT 认证 - API 网关
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: api-gateway-jwt
+  namespace: kubeops
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  jwtRules:
+  - issuer: "https://keycloak.example.com/auth/realms/kubeops"
+    jwks: "https://keycloak.example.com/auth/realms/kubeops/protocol/openid-connect/certs"
+    audiences:
+    - "kubeops-api"
+    fromHeaders:
+    - name: Authorization
+      prefix: "Bearer "
+    forwardOriginalToken: true
+---
+# 授权策略 - 允许健康检查
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-health-check
+  namespace: kubeops
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        paths:
+        - /health
+        - /ready
+---
+# 授权策略 - API 访问控制
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-access-policy
+  namespace: kubeops
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        requestPrincipals:
+        - "*"
+    to:
+    - operation:
+        methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        paths:
+        - /api/v1/*
+  - from:
+    - source:
+        namespaces:
+        - kubeops
+    to:
+    - operation:
+        methods:
+        - "*"

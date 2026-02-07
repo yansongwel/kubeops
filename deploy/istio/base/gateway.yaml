@@ -1,0 +1,164 @@
+# Istio 基础配置
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeops
+  labels:
+    istio-injection: enabled
+---
+# API 网关入口网关
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kubeops-gateway
+  namespace: kubeops
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "kubeops.local"
+    - "api.kubeops.local"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      serverCertificate: /etc/certs/server.crt
+      privateKey: /etc/certs/server.key
+    hosts:
+    - "kubeops.local"
+    - "api.kubeops.local"
+---
+# 前端虚拟服务
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend
+  namespace: kubeops
+spec:
+  hosts:
+  - "kubeops.local"
+  gateways:
+  - kubeops-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: frontend
+        port:
+          number: 80
+---
+# API 虚拟服务
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api
+  namespace: kubeops
+spec:
+  hosts:
+  - "api.kubeops.local"
+  gateways:
+  - kubeops-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1
+    route:
+    - destination:
+        host: api-gateway
+        port:
+          number: 8080
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+---
+# Kube 管理器内部服务
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kube-manager
+  namespace: kubeops
+spec:
+  hosts:
+  - kube-manager
+  http:
+  - route:
+    - destination:
+        host: kube-manager
+        port:
+          number: 8081
+---
+# AI 巡检服务
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ai-inspector
+  namespace: kubeops
+spec:
+  hosts:
+  - ai-inspector
+  http:
+  - route:
+    - destination:
+        host: ai-inspector
+        port:
+          number: 8082
+---
+# 目标规则 - API 网关
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-gateway
+  namespace: kubeops
+spec:
+  host: api-gateway
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+---
+# 目标规则 - Kube 管理器
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: kube-manager
+  namespace: kubeops
+spec:
+  host: kube-manager
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+---
+# 目标规则 - AI 巡检
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ai-inspector
+  namespace: kubeops
+spec:
+  host: ai-inspector
+  trafficPolicy:
+    loadBalancer:
+      simple: RANDOM
+    connectionPool:
+      tcp:
+        maxConnections: 50

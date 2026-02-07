@@ -1,0 +1,28 @@
+# Development values for KubeOps
+replicaCount: 1
+
+image:
+  repository: kubeops
+  tag: "dev"
+  pullPolicy: Never  # Use local images for kind
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Enable ingress for local development
+ingress:
+  enabled: false
+
+config:
+  ai:
+    provider: ollama  # Use local Ollama for development
+    openai:
+      apiKey: ""
+    ollama:
+      url: http://ollama:11434
+      model: llama2
