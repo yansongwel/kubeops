@@ -1,0 +1,213 @@
+# Higress 路由配置
+
+# 前端 Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  namespace: kubeops
+  annotations:
+    # Higress 配置
+    higress.io/destination: frontend.kubeops.svc.cluster.local:80
+    # 超时配置
+    higress.io/proxy-timeout: "30s"
+    # 超时重试
+    higress.io/proxy-retries: "3"
+    # 请求体大小限制
+    higress.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: higress
+  rules:
+  - host: kubeops.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+---
+# API Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+  namespace: kubeops
+  annotations:
+    higress.io/destination: api-gateway.kubeops.svc.cluster.local:8080
+    # 限流配置（每分钟 1000 次）
+    higress.io/rate-limit: "1000"
+    # 限流响应
+    higress.io/rate-limit-status-code: "429"
+    higress.io/rate-limit-response-text: "请求过于频繁，请稍后再试"
+    # CORS 配置
+    higress.io/cors-allow-origin: "http://kubeops.local"
+    higress.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    higress.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    higress.io/cors-max-age: "3600"
+spec:
+  ingressClassName: higress
+  rules:
+  - host: api.kubeops.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8080
+---
+# AI 巡检 API Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-inspector-ingress
+  namespace: kubeops
+  annotations:
+    higress.io/destination: ai-inspector.kubeops.svc.cluster.local:8082
+    # AI 接口限流更严格
+    higress.io/rate-limit: "100"
+    # 超时时间更长（AI 处理需要时间）
+    higress.io/proxy-timeout: "120s"
+spec:
+  ingressClassName: higress
+  rules:
+  - host: api.kubeops.local
+    http:
+      paths:
+      - path: /api/v1/ai-inspector
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-inspector
+            port:
+              number: 8082
+---
+# MCP Bridge - 连接 Istio
+apiVersion: networking.higress.io/v1
+kind: McpBridge
+metadata:
+  name: kubeops-mcp
+  namespace: kubeops
+spec:
+  # 从 Istio 同步配置
+  istioResources:
+  - apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    namespace: kubeops
+  - apiVersion: networking.istio.io/v1beta1
+    kind: DestinationRule
+    namespace: kubeops
+---
+# 灰度发布 - 基于请求头
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: canary-virtualservice
+  namespace: kubeops
+spec:
+  hosts:
+  - "api.kubeops.local"
+  http:
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: api-gateway
+        subset: v2
+  - route:
+    - destination:
+        host: api-gateway
+        subset: v1
+      weight: 90
+    - destination:
+        host: api-gateway
+        subset: v2
+      weight: 10
+---
+# 服务版本定义
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-gateway-subsets
+  namespace: kubeops
+spec:
+  host: api-gateway
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+# WAF 防护规则
+apiVersion: extensions.higress.io/v1alpha1
+kind: WafPolicy
+metadata:
+  name: kubeops-waf
+  namespace: kubeops
+spec:
+  # 防护类型
+  defenseType: anti-sqli
+  # 启用的规则
+  rules:
+  - id: 1001
+    description: "SQL 注入检测"
+    enabled: true
+  - id: 1002
+    description: "XSS 攻击检测"
+    enabled: true
+  # 白名单
+  whitelist:
+  - 10.0.0.0/8
+  - 192.168.0.0/16
+---
+# 限流策略
+apiVersion: extensions.higress.io/v1alpha1
+kind: RateLimitPolicy
+metadata:
+  name: api-rate-limit
+  namespace: kubeops
+spec:
+  # 限流类型
+  rateLimitType: global
+  # 限流规则
+  rules:
+  - resource: api-gateway
+    # 令牌桶配置
+    tokenBucket:
+      capacity: 100
+      rate: 100
+      unit: second
+    # 限流键
+    key:
+      type: HEADER
+      name: X-Real-IP
+---
+# 认证配置
+apiVersion: extensions.higress.io/v1alpha1
+kind: AuthPolicy
+metadata:
+  name: api-auth
+  namespace: kubeops
+spec:
+  # 认证类型
+  authType: jwt
+  # JWT 配置
+  jwt:
+    issuer: https://keycloak.example.com/auth/realms/kubeops
+    audience: kubeops-api
+    jwks: https://keycloak.example.com/auth/realms/kubeops/protocol/openid-connect/certs
+    # 从 Header 提取 Token
+    fromHeaders:
+    - name: Authorization
+      prefix: "Bearer "
+    # Token 转发
+    forwardOriginalToken: true

@@ -1,0 +1,198 @@
+# APISIX 路由配置
+
+# 前端路由
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: frontend-route
+  namespace: kubeops
+spec:
+  http:
+  - name: frontend
+    match:
+      paths:
+      - /*
+      headers:
+        host:
+          exact: kubeops.local
+    backends:
+    - serviceName: frontend
+      servicePort: 80
+    plugins:
+    - name: cors
+      enable: true
+      config:
+        allow_origins: http://kubeops.local
+        allow_methods: GET,POST,PUT,DELETE,OPTIONS
+---
+# API 路由 - 健康检查
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: health-route
+  namespace: kubeops
+spec:
+  http:
+  - name: health
+    match:
+      paths:
+      - /health
+      - /ready
+    backends:
+    - serviceName: api-gateway
+      servicePort: 8080
+    plugins:
+    - name: prometheus
+      enable: true
+---
+# API 路由 - API v1
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: api-v1-route
+  namespace: kubeops
+spec:
+  http:
+  - name: api-v1
+    match:
+      paths:
+      - /api/v1/*
+      headers:
+        host:
+          exact: api.kubeops.local
+    backends:
+    - serviceName: api-gateway
+      servicePort: 8080
+    plugins:
+    - name: jwt-auth
+      enable: false  # 按需启用
+    - name: limit-req
+      enable: true
+      config:
+        rate: 100
+        burst: 200
+        key_type: var
+        key: remote_addr
+        rejected_code: 429
+    - name: prometheus
+      enable: true
+    - name: cors
+      enable: true
+      config:
+        allow_origins: http://kubeops.local
+        allow_headers: DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization
+---
+# AI 巡检 API 路由
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: ai-inspector-route
+  namespace: kubeops
+spec:
+  http:
+  - name: ai-inspector
+    match:
+      paths:
+      - /api/v1/ai-inspector/*
+    backends:
+    - serviceName: ai-inspector
+      servicePort: 8082
+    plugins:
+    - name: limit-req
+      enable: true
+      config:
+        rate: 50  # AI 接口限制更严格
+        burst: 100
+    - name: proxy-rewrite
+      enable: true
+      config:
+        regex_uri:
+        - ^/api/v1/ai-inspector/(.*)
+        - /$1
+---
+# DevOps API 路由
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: devops-route
+  namespace: kubeops
+spec:
+  http:
+  - name: devops
+    match:
+      paths:
+      - /api/v1/devops/*
+    backends:
+    - serviceName: devops-service
+      servicePort: 8083
+    plugins:
+    - name: jwt-auth
+      enable: true
+    - name: proxy-rewrite
+      enable: true
+      config:
+        regex_uri:
+        - ^/api/v1/devops/(.*)
+        - /$1
+---
+# 流量拆分 - 灰度发布示例
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: canary-route
+  namespace: kubeops
+spec:
+  http:
+  - name: canary-test
+    match:
+      paths:
+      - /api/v1/*
+      headers:
+        x-canary:
+          exact: "true"
+    backends:
+    - serviceName: api-gateway-v2
+      servicePort: 8080
+    priority: 10
+  - name: normal
+    match:
+      paths:
+      - /api/v1/*
+    backends:
+    - serviceName: api-gateway-v1
+      servicePort: 8080
+      weight: 90
+    - serviceName: api-gateway-v2
+      servicePort: 8080
+      weight: 10
+    priority: 1
+---
+# 全局插件配置 - Prometheus 监控
+apiVersion: apisix.apache.org/v2
+kind: ApisixGlobalPluginConfig
+metadata:
+  name: prometheus-monitoring
+  namespace: kubeops
+spec:
+  plugins:
+  - name: prometheus
+    enable: true
+    config:
+      prefer_name: true
+---
+# 全局插件配置 - 请求日志
+apiVersion: apisix.apache.org/v2
+kind: ApisixGlobalPluginConfig
+metadata:
+  name: http-logger
+  namespace: kubeops
+spec:
+  plugins:
+  - name: http-logger
+    enable: true
+    config:
+      uri: http://log-collector.kubeops.svc.cluster.local:5044/apisix
+      batch_max_size: 100
+      inactive_timeout: 5s
+      buffer_duration: 60s
+      include_req_body: false

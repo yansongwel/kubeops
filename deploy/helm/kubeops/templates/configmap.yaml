@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubeops.fullname" . }}-config
+  labels:
+    {{- include "kubeops.labels" . | nindent 4 }}
+data:
+  # Logging configuration
+  LOGGING_STACK: {{ .Values.config.logging.stack | quote }}
+  ELASTICSEARCH_URL: {{ .Values.config.logging.elasticsearch.url | quote }}
+  LOKI_URL: {{ .Values.config.logging.loki.url | quote }}
+
+  # Monitoring configuration
+  MONITORING_STACK: {{ .Values.config.monitoring.stack | quote }}
+  PROMETHEUS_URL: {{ .Values.config.monitoring.prometheus.url | quote }}
+  VICTORIAMETRICS_URL: {{ .Values.config.monitoring.victoriametrics.url | quote }}
+
+  # AI configuration
+  AI_PROVIDER: {{ .Values.config.ai.provider | quote }}
+  OPENAI_MODEL: {{ .Values.config.ai.openai.model | quote }}
+  OLLAMA_URL: {{ .Values.config.ai.ollama.url | quote }}
+  OLLAMA_MODEL: {{ .Values.config.ai.ollama.model | quote }}
+
+  # DevOps configuration
+  JENKINS_URL: {{ .Values.config.devops.jenkins.url | quote }}
+  ARGOCD_URL: {{ .Values.config.devops.argocd.url | quote }}

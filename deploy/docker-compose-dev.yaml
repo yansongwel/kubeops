@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: bitnami/postgresql:15
+    container_name: kubeops-postgres
+    environment:
+      POSTGRES_USER: kubeops
+      POSTGRES_PASSWORD: kubeops
+      POSTGRES_DB: kubeops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/bitnami/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kubeops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: bitnami/redis:7
+    container_name: kubeops-redis
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NATS Message Queue (optional)
+  nats:
+    image: bitnami/nats:latest
+    container_name: kubeops-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: "-js"
+
+volumes:
+  postgres-data:
+  redis-data:

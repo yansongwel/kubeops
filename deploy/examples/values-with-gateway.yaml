@@ -1,0 +1,152 @@
+# 使用 APISIX 或 Higress 的部署配置
+
+# API 网关选择
+gateway:
+  # 可选值: apisix, higress, nginx
+  type: apisix
+
+# APISIX 配置
+apisix:
+  enabled: true
+  # Helm 仓库
+  repo: https://charts.apiseven.com
+  # 版本
+  version: 1.0.0
+  # 配置
+  config:
+    gateway:
+      type: LoadBalancer
+    admin:
+      enabled: true
+      # 默认管理员密码（生产环境请修改）
+      password: admin
+    dashboard:
+      enabled: true
+    # Prometheus 监控
+    prometheus:
+      enabled: true
+    # 插件
+    plugins:
+      - jwt-auth
+      - limit-req
+      - cors
+      - prometheus
+      - http-logger
+
+# Higress 配置
+higress:
+  enabled: false
+  # Helm 仓库
+  repo: https://higress.io/helm-charts
+  # 版本
+  version: 1.2.0
+  # 配置
+  config:
+    global:
+      enableIstioAPI: true
+    console:
+      enabled: true
+    # WAF 防护
+    waf:
+      enabled: true
+    # Prometheus 监控
+    monitoring:
+      enabled: true
+    # MCP Bridge（连接 Istio）
+    mcpBridge:
+      enabled: true
+
+# Istio 配置
+istio:
+  enabled: true
+  # Istio profile: default, demo, minimal
+  profile: default
+  # Sidecar 注入
+  injection:
+    enabled: true
+    namespaces:
+      - kubeops
+      - logging
+      - monitoring
+  # mTLS 模式: STRICT, PERMISSIVE, DISABLE
+  mtls:
+    mode: PERMISSIVE
+  # 流量管理
+  trafficManagement:
+    enabled: true
+  # 可观测性
+  observability:
+    tracing:
+      enabled: true
+      sampling: 10  # 采样率 10%
+    metrics:
+      enabled: true
+    logging:
+      enabled: true
+
+# 日志配置
+logging:
+  stack: elk  # elk 或 loki
+  elasticsearch:
+    url: http://elasticsearch:9200
+    index: kubeops-logs
+  loki:
+    url: http://loki:3100
+
+# 监控配置
+monitoring:
+  stack: prometheus  # prometheus 或 victoriametrics
+  prometheus:
+    url: http://prometheus:9090
+    retention: 15d
+  victoriametrics:
+    url: http://victoriametrics:8428
+
+# 应用配置
+image:
+  repository: kubeops
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# 副本数
+replicaCount: 1
+
+# 资源限制
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# 自动扩缩容
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod 中断预算
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# 服务配置
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# Ingress 配置（如果使用 API 网关，此配置会被忽略）
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: kubeops.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

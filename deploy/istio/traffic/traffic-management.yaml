@@ -1,0 +1,137 @@
+# 流量管理配置
+
+# 流量分割 - 灰度发布示例
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-gateway-canary
+  namespace: kubeops
+spec:
+  hosts:
+  - api-gateway
+  http:
+  # 基于请求头的灰度
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: api-gateway
+        subset: v2
+      weight: 100
+  # 基于权重的灰度（10% 流量到 v2）
+  - route:
+    - destination:
+        host: api-gateway
+        subset: v1
+      weight: 90
+    - destination:
+        host: api-gateway
+        subset: v2
+      weight: 10
+---
+# 目标规则 - 定义版本子集
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-gateway-subsets
+  namespace: kubeops
+spec:
+  host: api-gateway
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+---
+# 故障注入 - 延迟测试
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fault-injection-delay
+  namespace: kubeops
+spec:
+  hosts:
+  - kube-manager
+  http:
+  - fault:
+      delay:
+        percentage:
+          value: 10
+        fixedDelay: 5s
+    route:
+    - destination:
+        host: kube-manager
+---
+# 故障注入 - 中止测试
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fault-injection-abort
+  namespace: kubeops
+spec:
+  hosts:
+  - ai-inspector
+  http:
+  - fault:
+      abort:
+        percentage:
+          value: 5
+        httpStatus: 503
+    route:
+    - destination:
+        host: ai-inspector
+---
+# 请求超时配置
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: timeout-config
+  namespace: kubeops
+spec:
+  hosts:
+  - "*"
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/namespaces
+    timeout: 10s
+    route:
+    - destination:
+        host: kube-manager
+  - match:
+    - uri:
+        prefix: /api/v1/ai-inspector
+    timeout: 60s
+    retries:
+      attempts: 2
+      perTryTimeout: 30s
+    route:
+    - destination:
+        host: ai-inspector
+---
+# 请求镜像 - 测试环境
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: traffic-mirroring
+  namespace: kubeops
+spec:
+  hosts:
+  - api-gateway
+  http:
+  - route:
+    - destination:
+        host: api-gateway
+        subset: production
+    mirror:
+      host: api-gateway
+      subset: testing
+    mirrorPercentage:
+      value: 10
