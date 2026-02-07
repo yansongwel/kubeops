@@ -2,7 +2,7 @@
  * 集群管理 API
  */
 import request from '@/utils/request'
-import type { ApiResponse, Cluster, ClusterCreateParams } from '@/types/kube'
+import type { Cluster, ClusterCreateParams } from '@/types/kube'
 
 // 获取集群列表
 export function getClusters() {

@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:24-alpine as builder
 
 WORKDIR /app
 
@@ -10,8 +10,10 @@ RUN npm run build
 
 FROM nginx:alpine
 
+ENV API_GATEWAY=host.docker.internal:8080
+
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

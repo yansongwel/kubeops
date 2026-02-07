@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: bitnami/postgresql:15
+    image: docker.io/library/postgres:15
     container_name: kubeops-postgres
     environment:
       POSTGRES_USER: kubeops
@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./data/postgres:/bitnami/postgresql
+      - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kubeops"]
       interval: 10s
@@ -19,27 +19,26 @@ services:
 
   # Redis Cache
   redis:
-    image: bitnami/redis:7
+    image: docker.io/library/redis:7
     container_name: kubeops-redis
     environment:
-      ALLOW_EMPTY_PASSWORD: "no"
       REDIS_PASSWORD: "kubeops"
+    command: ["redis-server", "--requirepass", "kubeops"]
     ports:
       - "6379:6379"
     volumes:
-      - ./data/redis:/bitnami/redis/data
+      - ./data/redis:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping"]
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # NATS Message Queue (optional)
   nats:
-    image: bitnami/nats:latest
+    image: docker.io/library/nats:latest
     container_name: kubeops-nats
     ports:
       - "4222:4222"
       - "8222:8222"
     command: "-js"
-

@@ -137,6 +137,7 @@ onMounted(async () => {
 | `CONTRIBUTING.md` | 贡献指南 | ✅ 已完成 |
 | `docs/architecture/README.md` | 架构文档 | ✅ 已完成 |
 | `docs/QUICKSTART.md` | 快速开始 | ✅ 已完成 |
+| `docs/deployment/README.md` | 部署指南 | ✅ 已完成 |
 | `backend/api-gateway/cmd/server/main.go` | API 网关代码 | ✅ 已完成 |
 | `backend/kube-manager/cmd/server/main.go` | Kube 管理器代码 | ✅ 已完成 |
 | `frontend/src/main.ts` | 前端入口 | ✅ 已完成 |
@@ -151,7 +152,6 @@ onMounted(async () => {
 |---------|------|--------|
 | `docs/api/README.md` | API 文档 | 高 |
 | `docs/development/README.md` | 开发指南 | 高 |
-| `docs/deployment/README.md` | 部署指南 | 中 |
 | `docs/configuration/ai-provider.md` | AI 配置指南 | 中 |
 | `docs/configuration/cicd.md` | CI/CD 配置指南 | 中 |
 | `docs/deployment/logging.md` | 日志部署指南 | 中 |

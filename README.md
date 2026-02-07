@@ -117,6 +117,10 @@ helm install kubeops deploy/helm/kubeops \
   -f deploy/examples/values-production.yaml
 ```
 
+### 部署指南
+
+- 参考 docs/deployment/README.md
+
 ## 📦 功能特性
 
 ### 🔧 Kubernetes 资源管理
