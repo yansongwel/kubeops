@@ -73,7 +73,7 @@ KubeOps 采用**微服务架构**，部署在 Kubernetes 上：
 
 1. **克隆仓库**
 ```bash
-git clone https://github.com/your-org/kubeops.git
+git clone https://github.com/yansongwel/kubeops.git
 cd kubeops
 ```
 
