@@ -20,7 +20,7 @@
     "vue": "^3.5.0",
     "vue-router": "^4.5.0",
     "pinia": "^2.2.0",
-    "axios": "^1.7.0",
+    "axios": "^1.13.5",
     "element-plus": "^2.9.0",
     "@element-plus/icons-vue": "^2.3.1",
     "echarts": "^5.6.0",
