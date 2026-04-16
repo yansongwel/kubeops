@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.9.0
 	github.com/redis/go-redis/v9 v9.14.0
 	go.uber.org/zap v1.27.0
 	k8s.io/api v0.35.0
